@@ -19,79 +19,75 @@ std::pair<std::string, int> CommonLinuxApiSystem::updateSystem(
     const std::string command = "pkcon -p update -y --only-download && pkcon offline-get-prepared && pkcon offline-trigger";
     LOG(LogInfo) << "Starting system update using PackageKit CLI...";
 
-    std::array<char, 128> buffer;
-    std::ostringstream result;
-    std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(command.c_str(), "r"), pclose);
+    auto result = ApiSystem::executeScript(command, func);
+    std::string lastLine = result.first;
+    int returnCode = result.second;
 
-    if (!pipe) {
-        const std::string errorMsg = "Failed to execute update command.";
-        LOG(LogError) << errorMsg;
-        return std::pair<std::string, int>(errorMsg, -1);
-    }
-
-    std::string status;
-    while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr) {
-        std::string line = buffer.data();
-        result << line;
-
-        if (func) {
-            func(line);
-        }
-
-        status = line;
-    }
-
-    int returnCode = WEXITSTATUS(pclose(pipe.release()));
     if (returnCode == 5) {
         returnCode = 0;
     }
+
     if (returnCode != 0) {
         const std::string errorMsg = "Update command failed with exit code: " + std::to_string(returnCode);
         LOG(LogError) << errorMsg;
-        LOG(LogError) << "Command output: " << result.str();
+        LOG(LogError) << "Command output: " << lastLine;
         return std::pair<std::string, int>(errorMsg, returnCode);
     }
 
     LOG(LogInfo) << "System update completed successfully.";
-    return std::pair<std::string, int>(status, returnCode);
+    return std::pair<std::string, int>(lastLine, returnCode);
 }
 
 bool CommonLinuxApiSystem::canUpdate(std::vector<std::string>& output) {
     LOG(LogInfo) << "Checking for updates using PackageKit CLI...";
 
-    const std::string command = "LANG=C pkcon -p get-updates";
+    // Step 1: Check for offline updates
+    const std::string offlineCommand = "LANG=C pkcon -p offline-get-prepared";
 
-    std::array<char, 128> buffer;
-    std::ostringstream result;
-    std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(command.c_str(), "r"), pclose);
+    bool offlineUpdatesPrepared = true;
+    auto offlineCallback = [&output, &offlineUpdatesPrepared](const std::string& line) {
+        if (line.find("No offline updates have been prepared") != std::string::npos) {
+            offlineUpdatesPrepared = false;
+        }
+    };
 
-    if (!pipe) {
-        LOG(LogError) << "Failed to execute command: " << command;
+    auto result = ApiSystem::executeScript(offlineCommand, offlineCallback);
+    std::string lastLine = result.first;
+    int returnCode = result.second;
+
+    if (returnCode == 4 || returnCode == 5) {
+        returnCode = 0;
+    }
+
+    if (returnCode != 0) {
+        LOG(LogError) << "Offline command returned non-zero exit code: " << returnCode;
+        LOG(LogError) << "Offline command output: " << lastLine;
         return false;
     }
 
-    while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr) {
-        result << buffer.data();
+    if (offlineUpdatesPrepared) {
+        LOG(LogInfo) << "Offline updates have been prepared, skipping further update check.";
+        return false;
     }
 
-    int returnCode = pclose(pipe.release());
+    // Step 2: Check for updates
+    const std::string command = "pkcon -p refresh && LANG=C pkcon -p get-updates";
+
+    bool updatesAvailable = false;
+    auto updateCallback = [&output, &updatesAvailable](const std::string& line) {
+        if (line.find("no updates available") == std::string::npos) {
+            updatesAvailable = true;
+        }
+    };
+
+    result = ApiSystem::executeScript(command, updateCallback);
+    lastLine = result.first;
+    returnCode = result.second;
+
     if (returnCode != 0) {
         LOG(LogError) << "Command returned non-zero exit code: " << returnCode;
-        LOG(LogError) << "Command output: " << result.str();
+        LOG(LogError) << "Command output: " << lastLine;
         return false;
-    }
-
-    std::string line;
-    std::istringstream stream(result.str());
-    bool updatesAvailable = true;
-
-    while (std::getline(stream, line)) {
-        // output.push_back(line);
-        if (!updatesAvailable && line.find("no updates available") != std::string::npos) {
-            updatesAvailable = false;
-            // No need to continue parsing if updates are found
-            break;
-        }
     }
 
     if (updatesAvailable) {
@@ -102,4 +98,3 @@ bool CommonLinuxApiSystem::canUpdate(std::vector<std::string>& output) {
 
     return updatesAvailable;
 }
-
