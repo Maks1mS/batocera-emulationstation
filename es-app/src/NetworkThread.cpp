@@ -144,8 +144,14 @@ void NetworkThread::onJoystickChanged()
 void NetworkThread::OnWatcherChanged(IWatcher* component)
 {
 	if (component == &mCheckUpdatesComponent)
-	{
-		mWindow->displayNotificationMessage(_U("\uF019  ") + _("UPDATE AVAILABLE") + std::string(": ") + mCheckUpdatesComponent.getLastUpdateMessage());
+	{	
+		std::string version = mCheckUpdatesComponent.getLastUpdateMessage();
+		if (version != "") {
+			mWindow->displayNotificationMessage(_U("\uF019  ") + _("UPDATE AVAILABLE") + std::string(": ") + version);
+		} else {
+			mWindow->displayNotificationMessage(_U("\uF019  ") + _("UPDATE AVAILABLE"));
+		}
+
 		return;
 	}
 

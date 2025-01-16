@@ -48,6 +48,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <arpa/inet.h>
+#include "CommonLinuxApiSystem.h"
 #endif
 
 /*
@@ -84,7 +85,9 @@ ApiSystem *ApiSystem::getInstance()
 {
 	if (ApiSystem::instance == nullptr)
 	{
-#if WIN32
+#if EXPERIMENTAL_COMMON_LINUX_API_SYSTEM
+		ApiSystem::instance = new CommonLinuxApiSystem();
+#elif WIN32
 		ApiSystem::instance = new Win32ApiSystem();
 #else
 		ApiSystem::instance = new ApiSystem();
@@ -1427,6 +1430,8 @@ bool ApiSystem::getLED(int& red, int& green, int& blue)
 
         return true;
     }
+
+	return false;
 }
 
 void ApiSystem::getLEDColours(int& red, int& green, int& blue)

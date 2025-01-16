@@ -163,14 +163,16 @@ void GuiUpdate::update(int deltaTime)
 
 			std::string message = _("REALLY UPDATE?");
 
+#ifndef EXPERIMENTAL_COMMON_LINUX_API_SYSTEM
 			if (!mUpdateVersion.empty()) 
 			{
+
 				std::string versionExtra = ApiSystem::getInstance()->getVersion(true);
 				if (versionExtra == "none")
 					message = Utils::String::format(_("YOU ARE CURRENTLY USING VERSION %s\nDO YOU WANT TO UPDATE TO VERSION %s?").c_str(), ApiSystem::getInstance()->getVersion().c_str(), mUpdateVersion.c_str());
 				else
 					message = Utils::String::format(_("UNOFFICIAL SYSTEM MODIFICATIONS DETECTED.\nUPGRADING COULD BREAK YOUR SYSTEM.\nDO YOU WANT TO UPDATE TO VERSION %s?").c_str(), mUpdateVersion.c_str());
-
+#endif
 				window->pushGui(new GuiMsgBox(window, message, _("YES"), [this]
 				{
 					mState = 2;
@@ -181,7 +183,10 @@ void GuiUpdate::update(int deltaTime)
 
 				}, _("NO"), [this] { mState = -1; }));
 			}
-		}		
+#ifndef EXPERIMENTAL_COMMON_LINUX_API_SYSTEM
+		}
+#endif
+
 		break;
 
 		case 3:

@@ -1242,8 +1242,8 @@ void GuiMenu::openUpdatesSettings()
 		// Enable updates
 		updateGui->addSwitch(_("CHECK FOR UPDATES"), "updates.enabled", false);
 
+#ifndef EXPERIMENTAL_COMMON_LINUX_API_SYSTEM
 		auto updatesTypeList = std::make_shared<OptionListComponent<std::string> >(mWindow, _("UPDATE TYPE"), false);
-
 #if BATOCERA
 #define BETA_NAME "butterfly"
 #else
@@ -1269,6 +1269,7 @@ void GuiMenu::openUpdatesSettings()
 			if (SystemConf::getInstance()->set("updates.type", name))
 				SystemConf::getInstance()->saveSystemConf();
 		});
+#endif
 
 		// Start update
 		updateGui->addEntry(GuiUpdate::state == GuiUpdateState::State::UPDATE_READY ? _("APPLY UPDATE") : _("START UPDATE"), true, [this]

@@ -9,6 +9,7 @@ option(BCM "BCM host" OFF)
 
 option(BATOCERA "Set to ON to enable BATOCERA specific code" OFF)
 option(RETROBAT "Set to ON to enable RETROBAT specific code" OFF)
+option(EXPERIMENTAL_COMMON_LINUX "Set to ON to enable EXPERIMENTAL_COMMON_LINUX specific code" OFF)
 
 option(ENABLE_FILEMANAGER "Set to ON to enable f1 shortcut for filesystem" OFF)
 option(DISABLE_KODI "Set to ON to disable kodi in menu" OFF)
@@ -95,6 +96,11 @@ endif()
 if(RETROBAT)
   MESSAGE("Retrobat build")
   add_definitions(-DRETROBAT)
+endif()
+
+if(EXPERIMENTAL_COMMON_LINUX)
+  MESSAGE("EXPERIMENTAL_COMMON_LINUX build")
+  add_definitions(-DEXPERIMENTAL_COMMON_LINUX_API_SYSTEM)
 endif()
 
 # disable kodi menu
