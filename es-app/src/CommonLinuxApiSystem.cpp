@@ -1,3 +1,4 @@
+#if EXPERIMENTAL_COMMON_LINUX_API_SYSTEM
 #include "CommonLinuxApiSystem.h"
 #include "ApiSystem.h"
 #include "Log.h"
@@ -114,21 +115,11 @@ bool CommonLinuxApiSystem::canUpdate(std::vector<std::string>& output) {
 }
 
 bool CommonLinuxApiSystem::enableBluetooth() {
-    // return executeScript("bluetoothctl power on");
-    auto proxy = sdbus::createProxy("org.bluez", "/org/bluez/hci0");
-    proxy->callMethod("Set")
-                .onInterface("org.freedesktop.DBus.Properties")
-                .withArguments("org.bluez.Adapter1", "Powered", sdbus::Variant(true));
-    return true;
+    return executeScript("bluetoothctl power on");
 }
 
 bool CommonLinuxApiSystem::disableBluetooth() {
-    // return executeScript("bluetoothctl power off");
-    auto proxy = sdbus::createProxy("org.bluez", "/org/bluez/hci0");
-    proxy->callMethod("Set")
-                .onInterface("org.freedesktop.DBus.Properties")
-                .withArguments("org.bluez.Adapter1", "Powered", sdbus::Variant(false));
-    return true;
+    return executeScript("bluetoothctl power off");
 }
 
 struct Device {
@@ -204,6 +195,10 @@ std::string deviceEvent(const std::map<std::string, sdbus::Variant>& properties)
     return xml.str();
 }
 
+bool pairBluetoothFilter(std::map<std::basic_string<char>, sdbus::Variant> properties) {
+    return !properties["Paired"].get<bool>();
+}
+
 void CommonLinuxApiSystem::startBluetoothLiveDevices(const std::function<void(const std::string)>& func) {
     sdbus::createProxy("org.bluez", "/org/bluez/hci0")
         ->callMethod("StartDiscovery")
@@ -218,7 +213,7 @@ void CommonLinuxApiSystem::startBluetoothLiveDevices(const std::function<void(co
     for (const auto& [devicePath, interfaces] : pairedDevices) {
         if (interfaces.count("org.bluez.Device1") > 0) {
             auto properties = pairedDevices[devicePath]["org.bluez.Device1"];
-            if (!properties["Connected"].get<bool>()) {
+            if (pairBluetoothFilter(properties)) {
                 func(deviceAddedEvent(properties));
             }
         }
@@ -235,7 +230,9 @@ void CommonLinuxApiSystem::startBluetoothLiveDevices(const std::function<void(co
         .call([this, func](const sdbus::ObjectPath& objectPath, const std::map<std::string, std::map<std::string, sdbus::Variant>>& interfacesAndProperties){
             for (const auto& [interface, properties] : interfacesAndProperties) {
                 if (interface == "org.bluez.Device1") {
-                    func(deviceAddedEvent(properties));
+                    if (pairBluetoothFilter(properties)) {
+                        func(deviceAddedEvent(properties));
+                    }
                 }
             }
         });
@@ -315,3 +312,4 @@ std::vector<std::string> CommonLinuxApiSystem::getPairedBluetoothDeviceList() {
 bool CommonLinuxApiSystem::forgetBluetoothControllers() {
     return false;
 }
+#endif
