@@ -1,0 +1,12 @@
+- [ ] bluetooth control
+  - [x] enableBluetooth
+  - [x] disableBluetooth
+  - [x] startBluetoothLiveDevices
+  - [x] stopBluetoothLiveDevices
+  - [x] pairBluetoothDevice
+  - [x] connectBluetoothDevice
+  - [x] disconnectBluetoothDevice
+  - [x] removeBluetoothDevice
+  - [x] getPairedBluetoothDeviceList
+  - [ ] forgetBluetoothControllers
+  - [ ] scanNewBluetooth (marked as "Obsolete", but used in GUI)

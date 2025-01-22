@@ -8,14 +8,14 @@
 #include "resources/TextureData.h"
 #include "components/IExternalActivity.h"
 
-struct BiosFile 
+struct BiosFile
 {
   std::string status;
   std::string md5;
   std::string path;
 };
 
-struct BiosSystem 
+struct BiosSystem
 {
   std::string name;
   std::vector<BiosFile> bios;
@@ -31,14 +31,14 @@ struct BatoceraBezel
 
 struct BatoceraTheme
 {
-	std::string name; 
-	std::string url;  
+	std::string name;
+	std::string url;
 	std::string author;
 	std::string lastUpdate;
 	int upToDate;
 	int size;
 	std::string image;
-	
+
 	bool isInstalled;
 };
 
@@ -65,7 +65,7 @@ struct PacmanPackage
 	std::string preview_url;
 
 	std::string group;
-	std::vector<std::string> licenses;	
+	std::vector<std::string> licenses;
 
 	std::string arch;
 
@@ -95,7 +95,7 @@ public:
 	{
 		WIFI = 0,
 		RETROACHIVEMENTS = 1,
-		BLUETOOTH = 2,		
+		BLUETOOTH = 2,
 		RESOLUTION = 3,
 		BIOSINFORMATION = 4,
 		NETPLAY = 5,
@@ -168,16 +168,16 @@ public:
 
 	virtual std::string getIpAddress();
 
-	bool enableBluetooth();
-	bool disableBluetooth();
-	void startBluetoothLiveDevices(const std::function<void(const std::string)>& func);
-	void stopBluetoothLiveDevices();
-	bool pairBluetoothDevice(const std::string& deviceName);
-	bool connectBluetoothDevice(const std::string& deviceName);
-	bool disconnectBluetoothDevice(const std::string& deviceName);
-	bool removeBluetoothDevice(const std::string& deviceName);
+	virtual bool enableBluetooth();
+	virtual bool disableBluetooth();
+	virtual void startBluetoothLiveDevices(const std::function<void(const std::string)>& func);
+	virtual void stopBluetoothLiveDevices();
+	virtual bool pairBluetoothDevice(const std::string& deviceName);
+	virtual bool connectBluetoothDevice(const std::string& deviceName);
+	virtual bool disconnectBluetoothDevice(const std::string& deviceName);
+	virtual bool removeBluetoothDevice(const std::string& deviceName);
 
-	std::vector<std::string> getPairedBluetoothDeviceList();
+	virtual std::vector<std::string> getPairedBluetoothDeviceList();
 
 	// Obsolete
     bool scanNewBluetooth(const std::function<void(const std::string)>& func = nullptr);
@@ -203,7 +203,7 @@ public:
 
 	bool setPowerLedGameForce(std::string basic_string);
 
-    bool forgetBluetoothControllers();
+    virtual bool forgetBluetoothControllers();
 
     /* audio card */
     bool setAudioOutputDevice(std::string device);
@@ -260,7 +260,7 @@ public:
 	std::vector<std::string> getWifiNetworks(bool scan = false);
 
 	bool downloadFile(const std::string url, const std::string fileName, const std::string label = "", const std::function<void(const std::string)>& func = nullptr);
-	
+
 	// Formating
 	std::vector<std::string> getFormatDiskList();
 	std::vector<std::string> getFormatFileSystems();
@@ -298,12 +298,12 @@ public:
 protected:
 	ApiSystem();
 
-	virtual bool executeScript(const std::string command);  
+	virtual bool executeScript(const std::string command);
 	virtual std::pair<std::string, int> executeScript(const std::string command, const std::function<void(const std::string)>& func);
 	virtual std::vector<std::string> executeEnumerationScript(const std::string command);
 	virtual bool downloadGitRepository(const std::string& url, const std::string& branch, const std::string& fileName, const std::string& label, const std::function<void(const std::string)>& func, int64_t defaultDownloadSize = 0);
 	virtual std::string getGitRepositoryDefaultBranch(const std::string& url);
-		
+
 	virtual std::string getUpdateUrl();
 	virtual std::string getThemesUrl();
 
@@ -314,4 +314,3 @@ protected:
 };
 
 #endif
-

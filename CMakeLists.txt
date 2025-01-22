@@ -21,9 +21,9 @@ option(USE_SYSTEM_PUGIXML "Set to ON to use system-wide pugixml library" OFF)
 if(WIN32)
 
 	if (NOT CMAKE_GENERATOR_PLATFORM)
-		set(CMAKE_GENERATOR_PLATFORM Win32)	    
+		set(CMAKE_GENERATOR_PLATFORM Win32)
 	endif()
-	
+
 	MESSAGE("-- Destination platform : " ${CMAKE_GENERATOR_PLATFORM})
 
 	if(NOT VLC_VERSION)
@@ -32,13 +32,13 @@ if(WIN32)
 
 	if (IS_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../batocera-emulationstation-win32-dependencies)
 		set(CUSTOM_LIBDIR ${CMAKE_CURRENT_SOURCE_DIR}/../batocera-emulationstation-win32-dependencies)
-	elseif (IS_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/win32-libs) 
+	elseif (IS_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/win32-libs)
 		set(CUSTOM_LIBDIR ${CMAKE_CURRENT_SOURCE_DIR}/win32-libs)
 	else ()
 		MESSAGE("-- Downloading Windows libraries...")
-		
+
 		include(FetchContent)
-		
+
 		FetchContent_Declare(win32libs
 		  GIT_REPOSITORY "https://github.com/batocera-linux/batocera-emulationstation-win32-dependencies.git"
 		  GIT_TAG "origin/master"
@@ -48,9 +48,9 @@ if(WIN32)
 		FetchContent_MakeAvailable(win32libs)
 		set(CUSTOM_LIBDIR ${CMAKE_CURRENT_SOURCE_DIR}/win32-libs)
 	endif()
-	
-	if(CUSTOM_LIBDIR)		
-		MESSAGE("-- Default libraries path set to : " ${CUSTOM_LIBDIR} )		
+
+	if(CUSTOM_LIBDIR)
+		MESSAGE("-- Default libraries path set to : " ${CUSTOM_LIBDIR} )
 	endif()
 endif()
 
@@ -63,7 +63,7 @@ if(WIN32 AND CUSTOM_LIBDIR)
 	else()
 		set(CUSTOM_PLATFORM "x86")
 	endif()
-	
+
 	set(
 	  CMAKE_PREFIX_PATH
 	  ${CUSTOM_LIBDIR}/rapidjson
@@ -101,6 +101,9 @@ endif()
 if(EXPERIMENTAL_COMMON_LINUX)
   MESSAGE("EXPERIMENTAL_COMMON_LINUX build")
   add_definitions(-DEXPERIMENTAL_COMMON_LINUX_API_SYSTEM)
+
+  find_package(PkgConfig REQUIRED)
+  pkg_check_modules(SDBUS_CPP REQUIRED sdbus-c++)
 endif()
 
 # disable kodi menu
@@ -192,7 +195,7 @@ if(NOT WIN32)
 	else()
 	  MESSAGE("udev not found. guns will be disabled")
 	endif()
-	
+
 	if(ENABLE_TTS)
 	  MESSAGE("tts enabled")
 	  find_library(LIBESPEAK_LIBRARIES NAMES espeak REQUIRED)
@@ -273,10 +276,10 @@ if(CMAKE_COMPILER_IS_GNUCXX)
 
     #set up compiler flags for GCC
 if (CMAKE_BUILD_TYPE MATCHES Debug)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -Wno-attributes -O0") #support C++14 for std::, optimize
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -Wno-attributes -O0") #support C++17 for std::, optimize
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -O0")
 else()
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -Wno-attributes -O3") #support C++14 for std::, optimize
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -Wno-attributes -O3") #support C++17 for std::, optimize
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -O3")  #-s = strip binary
 endif()
 endif()
@@ -296,7 +299,7 @@ set(COMMON_INCLUDE_DIRS
     ${FreeImage_INCLUDE_DIRS}
     # batocera / background musics
     ${SDLMIXER_INCLUDE_DIR}
-    # batocera / customisations    
+    # batocera / customisations
     ${SDL2_INCLUDE_DIR}
     ${CURL_INCLUDE_DIR}
     ${VLC_INCLUDE_DIR}
@@ -329,6 +332,12 @@ endif()
 if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
     LIST(APPEND COMMON_INCLUDE_DIRS
         ${ALSA_INCLUDE_DIRS}
+    )
+endif()
+
+if(EXPERIMENTAL_COMMON_LINUX)
+    LIST(APPEND COMMON_INCLUDE_DIRS
+        ${SDBUS_CPP_INCLUDE_DIR}
     )
 endif()
 
@@ -379,13 +388,13 @@ set(COMMON_LIBRARIES
     ${SDL2_LIBRARY}
     # batocera / background musics
     ${SDLMIXER_LIBRARY}
-    # batocera / customisations    
+    # batocera / customisations
     ${CURL_LIBRARIES}
     ${VLC_LIBRARIES}
     pugixml
     nanosvg
     id3v2
-	libcheevos	
+	libcheevos
 )
 
 if(UDEV_FOUND)
@@ -426,6 +435,13 @@ endif()
 if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
     LIST(APPEND COMMON_LIBRARIES
         ${ALSA_LIBRARY}
+    )
+endif()
+
+
+if(EXPERIMENTAL_COMMON_LINUX)
+    LIST(APPEND COMMON_LIBRARIES
+        ${SDBUS_CPP_LINK_LIBRARIES}
     )
 endif()
 
@@ -492,7 +508,7 @@ endif()
 #-------------------------------------------------------------------------------
 # set up build directories
 
-if(WIN32)		
+if(WIN32)
 	set(dir ${CMAKE_CURRENT_SOURCE_DIR}/bin/${CMAKE_GENERATOR_PLATFORM})
 else()
 	set(dir ${CMAKE_CURRENT_SOURCE_DIR})
@@ -511,4 +527,3 @@ add_subdirectory("es-app")
 if(MSGFMT_EXECUTABLE AND MSGMERGE_EXECUTABLE AND XGETTEXT_EXECUTABLE AND Intl_FOUND)
   add_subdirectory (locale)
 endif()
-
