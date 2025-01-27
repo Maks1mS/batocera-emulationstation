@@ -1,3 +1,5 @@
+## ApiSystem
+
 isScriptingSupported()
 - [x] THEMESDOWNLOADER
 - [ ] RETROACHIVEMENTS
@@ -41,9 +43,9 @@ isScriptingSupported()
 - [x] UPGRADE
 - [ ] SUSPEND
 - [ ] READPLANEMODE, WRITEPLANEMODE
-    > Check [batocera-planemode](https://github.com/batocera-linux/batocera.linux/blob/4158b1c5602461f8dabe965541cda9c6f3d73dfa/package/batocera/core/batocera-scripts/scripts/batocera-planemode)
-    > TLDR:
-    > isPlaneMode = blEnabled && wifiEnabled
+    > Check [batocera-planemode](https://github.com/batocera-linux/batocera.linux/blob/4158b1c5602461f8dabe965541cda9c6f3d73dfa/package/batocera/core/batocera-scripts/scripts/batocera-planemode) \
+    > TLDR: \
+    > isPlaneMode = blEnabled && wifiEnabled \
     > Disable planeMode is enable bt and enable wifi
   - [ ] setPlaneMode
   - [ ] isPlaneMode
@@ -52,6 +54,6 @@ isScriptingSupported()
 
 Extra:
 - [x] getSystemInformations
-> "Architecture" and "Available Memory" implemented
-> Full list is here: https://github.com/batocera-linux/batocera.linux/blob/4158b1c5602461f8dabe965541cda9c6f3d73dfa/package/batocera/core/batocera-scripts/scripts/batocera-info
+> "Architecture" and "Available Memory" implemented \
+> Full list is here: [batocera-info](https://github.com/batocera-linux/batocera.linux/blob/4158b1c5602461f8dabe965541cda9c6f3d73dfa/package/batocera/core/batocera-scripts/scripts/batocera-info)
 - [x] Brighntees **(rights needs for /sys/class/backlight)**
