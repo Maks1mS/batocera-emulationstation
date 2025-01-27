@@ -24,9 +24,8 @@ isScriptingSupported
 - [ ] SUSPEND
 - [ ] READPLANEMODE
 - [ ] WRITEPLANEMODE
-- [ ] SERVICES
+- [x] SERVICES **(uses system services, so need root)**
 - [ ] BACKGLASS
-
 
 - [ ] BLUETOOTH
   - [x] enableBluetooth
@@ -50,12 +49,8 @@ isScriptingSupported
   - [x] getBrightness
   - [x] setBrightness
 
-- [ ] Resolution
-  - [ ] getVideoModes
+Extra:
+- [x] getSystemInformations
+> "Architecture" and "Available Memory" implemented
+> Full list is here: https://github.com/batocera-linux/batocera.linux/blob/4158b1c5602461f8dabe965541cda9c6f3d73dfa/package/batocera/core/batocera-scripts/scripts/batocera-info
 
-- [ ] BatoceraPackages
-  - [ ] std::vector<PacmanPackage> getBatoceraStorePackages();
-  - [ ] std::pair<std::string, int> installBatoceraStorePackage(std::string name, const std::function<void(const std::string)>& func = nullptr);
-  - [ ] std::pair<std::string, int> uninstallBatoceraStorePackage(std::string name, const std::function<void(const std::string)>& func = nullptr);
-  - [ ] void updateBatoceraStorePackageList();
-  - [ ] void refreshBatoceraStorePackageList();

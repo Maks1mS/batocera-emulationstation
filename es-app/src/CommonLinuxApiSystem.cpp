@@ -48,6 +48,7 @@ bool CommonLinuxApiSystem::isScriptingSupported(ScriptId script) {
         case ApiSystem::BLUETOOTH:
         case ApiSystem::WIFI:
         case ApiSystem::TIMEZONES:
+        case ApiSystem::SERVICES:
             return true;
         default:
             return ApiSystem::isScriptingSupported(script);
@@ -378,5 +379,71 @@ bool CommonLinuxApiSystem::setTimezone(std::string tz)
 
     return executeScript("timedatectl set-timezone \"" + tz + "\"");
 }
+
+std::vector<std::string> CommonLinuxApiSystem::getSystemInformations() {
+    std::vector<std::string> info;
+
+    info.push_back("Architecture: " + this->getRunningArchitecture());
+
+    std::vector<std::string> memInfoLines = executeEnumerationScript("head /proc/meminfo");
+
+    int memTotalKB = 0;
+    int memAvailableKB = 0;
+
+    for (const auto& line : memInfoLines) {
+        if (Utils::String::startsWithIgnoreCase(line, "MemTotal:")) {
+            std::vector<std::string> parts = Utils::String::split(line, ' ', true);
+            if (parts.size() > 1) {
+                memTotalKB = Utils::String::toInteger(parts[1]);
+            }
+        } else if (Utils::String::startsWithIgnoreCase(line, "MemAvailable:")) {
+            std::vector<std::string> parts = Utils::String::split(line, ' ', true);
+            if (parts.size() > 1) {
+                memAvailableKB = Utils::String::toInteger(parts[1]);
+            }
+        }
+    }
+
+    int memTotalMB = memTotalKB / 1024;
+    int memAvailableMB = memAvailableKB / 1024;
+
+    info.push_back(Utils::String::format("Available Memory: %d/%d MB", memAvailableMB, memTotalMB));
+
+    return info;
+};
+
+std::vector<Service> CommonLinuxApiSystem::getServices() {
+    std::vector<Service> services;
+    LOG(LogDebug) << "ApiSystem::getServices";
+
+    auto slines = executeEnumerationScript("systemctl list-unit-files --type=service --no-pager");
+    for (auto sline : slines)
+    {
+        auto splits = Utils::String::split(sline, ' ', true);
+        if (splits.size() >= 2)
+        {
+            Service s;
+            s.name = splits[0];
+            s.enabled = (splits[1] == "enabled");
+            services.push_back(s);
+        }
+    }
+
+    return services;
+};
+
+bool CommonLinuxApiSystem::enableService(std::string name, bool enable) {
+    std::string serviceName = name;
+    if (serviceName.find(" ") != std::string::npos)
+        serviceName = "\"" + serviceName + "\"";
+
+    LOG(LogDebug) << "ApiSystem::enableService " << serviceName;
+
+    bool res = executeScript("systemctl " + std::string(enable ? "enable" : "disable") + " " + serviceName);
+    if (res)
+        res = executeScript("systemctl " + std::string(enable ? "start" : "stop") + " " + serviceName);
+
+    return res;
+};
 
 #endif

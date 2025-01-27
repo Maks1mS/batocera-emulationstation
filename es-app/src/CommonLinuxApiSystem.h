@@ -41,5 +41,12 @@ public:
     std::vector<std::string> getTimezones() override;
     std::string getCurrentTimezone() override;
     bool setTimezone(std::string tz) override;
+
+    // Extra
+    std::vector<std::string> getSystemInformations() override;
+
+    // SERVICES
+    std::vector<Service> getServices() override;
+    bool enableService(std::string name, bool enable) override;
 };
 #endif
