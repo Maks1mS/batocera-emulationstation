@@ -1,4 +1,34 @@
-- [ ] bluetooth control
+isScriptingSupported
+- [x] THEMESDOWNLOADER
+- [ ] RETROACHIVEMENTS
+- [ ] KODI
+- [x] WIFI
+- [x] BLUETOOTH
+- [ ] RESOLUTION
+- [ ] BIOSINFORMATION
+- [ ] DISKFORMAT
+- [ ] OVERCLOCK
+- [ ] NETPLAY
+- [ ] PDFEXTRACTION
+- [ ] BATOCERASTORE
+- [ ] THEBEZELPROJECT
+- [ ] PADSINFO
+- [ ] EVMAPY
+- [ ] BATOCERAPREGAMELISTSHOOK
+- [x] TIMEZONES
+- [ ] AUDIODEVICE
+- [ ] BACKUP
+- [ ] INSTALL
+- [ ] SUPPORTFILE
+- [x] UPGRADE
+- [ ] SUSPEND
+- [ ] READPLANEMODE
+- [ ] WRITEPLANEMODE
+- [ ] SERVICES
+- [ ] BACKGLASS
+
+
+- [ ] BLUETOOTH
   - [x] enableBluetooth
   - [x] disableBluetooth
   - [x] startBluetoothLiveDevices
@@ -8,7 +38,7 @@
   - [x] disconnectBluetoothDevice
   - [x] removeBluetoothDevice
   - [x] getPairedBluetoothDeviceList
-  - [ ] forgetBluetoothControllers
+  - [x] forgetBluetoothControllers
   - [ ] scanNewBluetooth (marked as "Obsolete", but used in GUI)
 
 - [ ] WIFI

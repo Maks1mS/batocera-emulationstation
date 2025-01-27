@@ -1,6 +1,7 @@
 #if EXPERIMENTAL_COMMON_LINUX_API_SYSTEM
 #include "CommonLinuxApiSystem.h"
 #include "ApiSystem.h"
+#include "utils/StringUtil.h"
 #include "Log.h"
 #include <functional>
 #include <memory>
@@ -44,10 +45,9 @@ CommonLinuxApiSystem::CommonLinuxApiSystem() {}
 bool CommonLinuxApiSystem::isScriptingSupported(ScriptId script) {
     switch (script) {
         case ApiSystem::UPGRADE:
-            return true;
         case ApiSystem::BLUETOOTH:
-            return true;
         case ApiSystem::WIFI:
+        case ApiSystem::TIMEZONES:
             return true;
         default:
             return ApiSystem::isScriptingSupported(script);
@@ -351,5 +351,32 @@ std::vector<std::string> CommonLinuxApiSystem::getWifiNetworks(bool scan) {
     return res;
 };
 
+std::vector<std::string> CommonLinuxApiSystem::getTimezones()
+{
+    LOG(LogDebug) << "ApiSystem::getTimezones";
+
+    std::vector<std::string> ret = executeEnumerationScript("timedatectl list-timezones");
+    std::sort(ret.begin(), ret.end());
+    return ret;
+}
+
+std::string CommonLinuxApiSystem::getCurrentTimezone()
+{
+    LOG(LogInfo) << "ApiSystem::getCurrentTimezone";
+
+    auto cmd = executeEnumerationScript("timedatectl show --property=Timezone --value");
+    std::string tz = Utils::String::join(cmd, "");
+    Utils::String::trim(tz);
+
+    return tz;
+}
+
+bool CommonLinuxApiSystem::setTimezone(std::string tz)
+{
+    if (tz.empty())
+        return false;
+
+    return executeScript("timedatectl set-timezone \"" + tz + "\"");
+}
 
 #endif

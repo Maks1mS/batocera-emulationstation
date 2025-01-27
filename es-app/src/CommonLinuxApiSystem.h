@@ -36,5 +36,10 @@ public:
     bool enableWifi(std::string ssid, std::string key) override;
     bool disableWifi() override;
     std::vector<std::string> getWifiNetworks(bool scan) override;
+
+    // TIMEZONE
+    std::vector<std::string> getTimezones() override;
+    std::string getCurrentTimezone() override;
+    bool setTimezone(std::string tz) override;
 };
 #endif
