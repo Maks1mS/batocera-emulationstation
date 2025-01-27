@@ -4,7 +4,6 @@
 #include "Log.h"
 #include <functional>
 #include <memory>
-#include <regex>
 #include <sdbus-c++/IConnection.h>
 #include <sdbus-c++/IProxy.h>
 #include <sdbus-c++/ProxyInterfaces.h>
@@ -15,6 +14,31 @@
 #include <vector>
 #include <sdbus-c++/sdbus-c++.h>
 
+std::vector<std::map<std::string, sdbus::Variant>> getBluetoothDevices(
+    std::function<bool(const std::map<std::string, sdbus::Variant> &)>
+        deviceFilter) {
+    std::vector<std::map<std::string, sdbus::Variant>> result;
+
+    std::map<sdbus::ObjectPath,
+            std::map<std::string, std::map<std::string, sdbus::Variant>>>
+            devices;
+    sdbus::createProxy("org.bluez", "/")
+            ->callMethod("GetManagedObjects")
+            .onInterface("org.freedesktop.DBus.ObjectManager")
+            .storeResultsTo(devices);
+
+    for (const auto &[devicePath, interfaces] : devices) {
+        if (interfaces.count("org.bluez.Device1") > 0) {
+            const auto &properties = interfaces.at("org.bluez.Device1");
+            if (deviceFilter(properties)) {
+                result.push_back(properties);
+            }
+        }
+    }
+
+    return result;
+}
+
 CommonLinuxApiSystem::CommonLinuxApiSystem() {}
 
 bool CommonLinuxApiSystem::isScriptingSupported(ScriptId script) {
@@ -22,6 +46,8 @@ bool CommonLinuxApiSystem::isScriptingSupported(ScriptId script) {
         case ApiSystem::UPGRADE:
             return true;
         case ApiSystem::BLUETOOTH:
+            return true;
+        case ApiSystem::WIFI:
             return true;
         default:
             return ApiSystem::isScriptingSupported(script);
@@ -204,19 +230,15 @@ void CommonLinuxApiSystem::startBluetoothLiveDevices(const std::function<void(co
         ->callMethod("StartDiscovery")
         .onInterface("org.bluez.Adapter1");
 
-    std::map<sdbus::ObjectPath, std::map<std::string, std::map<std::string, sdbus::Variant>>> pairedDevices;
-    sdbus::createProxy("org.bluez", "/")
-        ->callMethod("GetManagedObjects")
-        .onInterface("org.freedesktop.DBus.ObjectManager")
-        .storeResultsTo(pairedDevices);
-
-    for (const auto& [devicePath, interfaces] : pairedDevices) {
-        if (interfaces.count("org.bluez.Device1") > 0) {
-            auto properties = pairedDevices[devicePath]["org.bluez.Device1"];
-            if (pairBluetoothFilter(properties)) {
-                func(deviceAddedEvent(properties));
-            }
+    try {
+        auto devices = getBluetoothDevices([](const std::map<std::string, sdbus::Variant> &properties) {
+            return !properties.at("Paired").get<bool>();
+        });
+        for (const auto& device : devices) {
+            func(deviceAddedEvent(device));
         }
+    } catch (const sdbus::Error& e) {
+        LOG(LogError) << "D-Bus Error: " << e.what();
     }
 
     rootAdapterProxy = sdbus::createProxy(
@@ -283,33 +305,51 @@ bool CommonLinuxApiSystem::removeBluetoothDevice(const std::string& deviceName) 
 
 
 std::vector<std::string> CommonLinuxApiSystem::getPairedBluetoothDeviceList() {
-    std::vector<std::string> devices;
+    std::vector<std::string> devicesXml;
 
     try {
-        auto connection = sdbus::createSystemBusConnection();
-        auto rootProxy = sdbus::createProxy(*connection, "org.bluez", "/");
-
-        std::map<sdbus::ObjectPath, std::map<std::string, std::map<std::string, sdbus::Variant>>> pairedDevices;
-        rootProxy->callMethod("GetManagedObjects")
-            .onInterface("org.freedesktop.DBus.ObjectManager")
-            .storeResultsTo(pairedDevices);
-
-        for (const auto& [devicePath, interfaces] : pairedDevices) {
-            if (interfaces.count("org.bluez.Device1") > 0) {
-                auto properties = pairedDevices[devicePath]["org.bluez.Device1"];
-                if (properties["Paired"].get<bool>()) {
-                    devices.emplace_back(deviceEvent(properties));
-                }
-            }
+        auto devices = getBluetoothDevices([](const std::map<std::string, sdbus::Variant> &properties) {
+            return properties.at("Paired").get<bool>();
+        });
+        for (const auto& device : devices) {
+            devicesXml.emplace_back(deviceEvent(device));
         }
     } catch (const sdbus::Error& e) {
         LOG(LogError) << "D-Bus Error: " << e.what();
     }
 
-    return devices;
+    return devicesXml;
 }
 
 bool CommonLinuxApiSystem::forgetBluetoothControllers() {
-    return false;
+    try {
+        auto devicesProps = getBluetoothDevices([](const std::map<std::string, sdbus::Variant> &properties) {
+            return properties.at("Paired").get<bool>();
+        });
+
+        for (const auto& properties : devicesProps) {
+            auto device = extractDevice(properties);
+            executeScript("bluetoothctl remove " + device.address);
+        }
+    } catch (const sdbus::Error& e) {
+        LOG(LogError) << "D-Bus Error: " << e.what();
+    }
+
+    return true;
 }
+
+bool CommonLinuxApiSystem::enableWifi(std::string ssid, std::string key) {
+    LOG(LogDebug) << "disableWifi ";
+    return executeScript("nmcli radio wifi on");
+};
+bool CommonLinuxApiSystem::disableWifi() {
+    LOG(LogDebug) << "disableWifi ";
+    return executeScript("nmcli radio wifi off");
+};
+std::vector<std::string> CommonLinuxApiSystem::getWifiNetworks(bool scan) {
+    std::vector<std::string> res;
+    return res;
+};
+
+
 #endif

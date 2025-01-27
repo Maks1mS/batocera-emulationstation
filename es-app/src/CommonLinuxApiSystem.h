@@ -31,5 +31,10 @@ public:
     bool removeBluetoothDevice(const std::string& deviceName) override;
     std::vector<std::string> getPairedBluetoothDeviceList() override;
     bool forgetBluetoothControllers() override;
+
+    // WIFI
+    bool enableWifi(std::string ssid, std::string key) override;
+    bool disableWifi() override;
+    std::vector<std::string> getWifiNetworks(bool scan) override;
 };
 #endif

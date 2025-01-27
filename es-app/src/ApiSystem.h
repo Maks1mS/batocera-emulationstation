@@ -163,8 +163,8 @@ public:
     virtual bool launchKodi(Window *window);
     bool launchFileManager(Window *window);
 
-    bool enableWifi(std::string ssid, std::string key);
-    bool disableWifi();
+    virtual bool enableWifi(std::string ssid, std::string key);
+    virtual bool disableWifi();
 
 	virtual std::string getIpAddress();
 
@@ -257,7 +257,7 @@ public:
 	bool getLEDBrightness(int& value);
 	void setLEDBrightness(int value);
 
-	std::vector<std::string> getWifiNetworks(bool scan = false);
+	virtual std::vector<std::string> getWifiNetworks(bool scan = false);
 
 	bool downloadFile(const std::string url, const std::string fileName, const std::string label = "", const std::function<void(const std::string)>& func = nullptr);
 
