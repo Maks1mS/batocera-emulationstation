@@ -31,8 +31,8 @@ namespace Utils
 	namespace Platform
 	{
 		ProcessStartInfo::ProcessStartInfo()
-		{ 			
-			window = nullptr; 
+		{
+			window = nullptr;
 			waitForExit = true;
 			showWindow = true;
 #ifndef WIN32
@@ -42,9 +42,9 @@ namespace Utils
 		}
 
 		ProcessStartInfo::ProcessStartInfo(const std::string& cmd)
-		{ 
+		{
 			command = cmd;
-			window = nullptr; 
+			window = nullptr;
 			waitForExit = true;
 			showWindow = true;
 #ifndef WIN32
@@ -94,9 +94,9 @@ namespace Utils
 			lpExecInfo.hwnd = NULL;
 			lpExecInfo.lpVerb = L"open"; // to open  program
 			lpExecInfo.lpDirectory = NULL;
-			lpExecInfo.nShow = showWindow ? SW_SHOW : SW_HIDE;  // show command prompt with normal window size 
+			lpExecInfo.nShow = showWindow ? SW_SHOW : SW_HIDE;  // show command prompt with normal window size
 			lpExecInfo.hInstApp = (HINSTANCE)SE_ERR_DDEFAIL;   //WINSHELLAPI BOOL WINAPI result;
-			lpExecInfo.lpParameters = wargs.c_str(); //  file name as an argument	
+			lpExecInfo.lpParameters = wargs.c_str(); //  file name as an argument
 
 			std::wstring wpath;
 
@@ -153,7 +153,7 @@ namespace Utils
 
 			// fork the current process
 			pid_t ret = fork();
-			if (ret == 0) 
+			if (ret == 0)
 			{
 				ret = fork();
 				if (ret == 0)
@@ -180,16 +180,16 @@ namespace Utils
 		{
 #ifdef WIN32 // windows
 			return system("shutdown -s -t 0");
-#else // osx / linux	
+#else // osx / linux
 			return system("shutdown -h now");
 #endif
 		}
 
 		int runRestartCommand()
 		{
-#ifdef WIN32 // windows	
+#ifdef WIN32 // windows
 			return system("shutdown -r -t 0");
-#else // osx / linux	
+#else // osx / linux
 			return system("shutdown -r now");
 #endif
 		}
@@ -229,7 +229,7 @@ namespace Utils
 				close(fd);
 
 			// system(("touch " + filename).c_str());
-#endif	
+#endif
 		}
 
 		void processQuitMode()
@@ -417,6 +417,10 @@ namespace Utils
 
 					// Qualcomm devices use "qcom-battery"
 					if ((Utils::String::toLower(file).find("/qcom-battery") != std::string::npos) && (batteryRootPath.empty()))
+						batteryRootPath = file;
+
+					// RG 353M device use "rk817-battery"
+					if ((Utils::String::toLower(file).find("battery") != std::string::npos) && (batteryRootPath.empty()))
 						batteryRootPath = file;
 
 					if ((Utils::String::toLower(file).find("fuel") != std::string::npos) && (fuelgaugeRootPath.empty()))
