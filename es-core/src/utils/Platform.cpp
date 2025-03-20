@@ -180,6 +180,8 @@ namespace Utils
 		{
 #ifdef WIN32 // windows
 			return system("shutdown -s -t 0");
+#elif EXPERIMENTAL_COMMON_LINUX_API_SYSTEM
+            return system("systemctl poweroff");
 #else // osx / linux
 			return system("shutdown -h now");
 #endif
@@ -189,6 +191,8 @@ namespace Utils
 		{
 #ifdef WIN32 // windows
 			return system("shutdown -r -t 0");
+#elif EXPERIMENTAL_COMMON_LINUX_API_SYSTEM
+            return system("systemctl reboot");
 #else // osx / linux
 			return system("shutdown -r now");
 #endif
