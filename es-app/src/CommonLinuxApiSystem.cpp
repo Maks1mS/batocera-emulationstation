@@ -23,7 +23,7 @@ std::vector<std::map<std::string, sdbus::Variant>> getBluetoothDevices(
     std::map<sdbus::ObjectPath,
             std::map<std::string, std::map<std::string, sdbus::Variant>>>
             devices;
-    sdbus::createProxy("org.bluez", "/")
+    sdbus::createProxy(sdbus::ServiceName{"org.bluez"}, sdbus::ObjectPath{"/"})
             ->callMethod("GetManagedObjects")
             .onInterface("org.freedesktop.DBus.ObjectManager")
             .storeResultsTo(devices);
@@ -227,7 +227,7 @@ bool pairBluetoothFilter(std::map<std::basic_string<char>, sdbus::Variant> prope
 }
 
 void CommonLinuxApiSystem::startBluetoothLiveDevices(const std::function<void(const std::string)>& func) {
-    sdbus::createProxy("org.bluez", "/org/bluez/hci0")
+    sdbus::createProxy(sdbus::ServiceName{"org.bluez"}, sdbus::ObjectPath{"/org/bluez/hci0"})
         ->callMethod("StartDiscovery")
         .onInterface("org.bluez.Adapter1");
 
@@ -243,8 +243,8 @@ void CommonLinuxApiSystem::startBluetoothLiveDevices(const std::function<void(co
     }
 
     rootAdapterProxy = sdbus::createProxy(
-        "org.bluez",
-        "/"
+        sdbus::ServiceName{"org.bluez"},
+        sdbus::ObjectPath{"/"}
     );
 
     rootAdapterProxy->
@@ -270,15 +270,13 @@ void CommonLinuxApiSystem::startBluetoothLiveDevices(const std::function<void(co
                 }
             }
         });
-
-    rootAdapterProxy->finishRegistration();
 }
 
 void CommonLinuxApiSystem::stopBluetoothLiveDevices() {
     rootAdapterProxy.reset();
 
     try {
-        auto proxy = sdbus::createProxy("org.bluez", "/org/bluez/hci0");
+        auto proxy = sdbus::createProxy(sdbus::ServiceName{"org.bluez"}, sdbus::ObjectPath{"/org/bluez/hci0"});
         proxy->callMethod("StopDiscovery").onInterface("org.bluez.Adapter1");
     } catch (const sdbus::Error& e) {
         // Ignore error
