@@ -6,14 +6,22 @@
 #include <sdbus-c++/sdbus-c++.h>
 #include "ApiSystem.h"
 
+struct Device {
+    std::string address;
+    std::string name;
+};
+
 class CommonLinuxApiSystem : public ApiSystem
 {
 private:
+
     std::unique_ptr<sdbus::IProxy> bluetoothAdapterProxy;
     std::unique_ptr<sdbus::IProxy> rootAdapterProxy;
+    std::map<std::string, Device> discoveredDevicePaths;
+    std::mutex devicesMutex;
 public:
     CommonLinuxApiSystem();
-    virtual void deinit() override {};
+    void deinit() override {};
 
     bool isScriptingSupported(ScriptId script) override;
 

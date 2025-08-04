@@ -16,14 +16,14 @@
 #include <sdbus-c++/sdbus-c++.h>
 
 std::vector<
-    std::map<std::string, sdbus::Variant>
+    std::pair<std::string, std::map<std::string, sdbus::Variant>>
 > getBluetoothDevices(
-    std::function<bool(
+    const std::function<bool(
         const std::map<std::string, sdbus::Variant> &
-    )>
+    )>&
         deviceFilter
 ) {
-    std::vector<std::map<std::string, sdbus::Variant>> result;
+    std::vector<std::pair<std::string, std::map<std::string, sdbus::Variant>>> result;
 
     std::map<sdbus::ObjectPath,
             std::map<std::string, std::map<std::string, sdbus::Variant>>>
@@ -41,8 +41,12 @@ std::vector<
     for (const auto &[devicePath, interfaces] : devices) {
         if (interfaces.count("org.bluez.Device1") > 0) {
             const auto &properties = interfaces.at("org.bluez.Device1");
-            if (deviceFilter(properties)) {
-                result.push_back(properties);
+            if (auto nameIt = properties.find("Name"); nameIt != properties.end()) {
+                if (auto name = nameIt->second.get<std::string>(); !name.empty()) {
+                    if (deviceFilter(properties)) {
+                        result.emplace_back(devicePath, properties);
+                    }
+                }
             }
         }
     }
@@ -159,11 +163,6 @@ bool CommonLinuxApiSystem::disableBluetooth() {
     return executeScript("bluetoothctl power off");
 }
 
-struct Device {
-    std::string address;
-    std::string name;
-};
-
 Device extractDevice(const std::map<std::string, sdbus::Variant>& properties) {
     std::string address;
     std::string name;
@@ -184,8 +183,7 @@ Device extractDevice(const std::map<std::string, sdbus::Variant>& properties) {
     };
 }
 
-std::string deviceAddedEvent(const std::map<std::string, sdbus::Variant>& properties) {
-    auto device = extractDevice(properties);
+std::string deviceAddedEvent(const Device& device) {
     std::ostringstream xml;
     xml << "<device id=\"" << device.address
         << "\" name=\"" << device.name
@@ -193,8 +191,7 @@ std::string deviceAddedEvent(const std::map<std::string, sdbus::Variant>& proper
     return xml.str();
 }
 
-std::string deviceRemovedEvent(const std::map<std::string, sdbus::Variant>& properties) {
-    auto device = extractDevice(properties);
+std::string deviceRemovedEvent(const Device& device) {
     std::ostringstream xml;
     xml << "<device id=\"" << device.address
         << "\" name=\"" << device.name
@@ -237,6 +234,11 @@ bool pairBluetoothFilter(std::map<std::basic_string<char>, sdbus::Variant> prope
 }
 
 void CommonLinuxApiSystem::startBluetoothLiveDevices(const std::function<void(const std::string)>& func) {
+    {
+        std::lock_guard<std::mutex> lock(devicesMutex);
+        discoveredDevicePaths.clear();
+    }
+
     sdbus::createProxy(
         sdbus::createSystemBusConnection(),
         sdbus::ServiceName{"org.bluez"},
@@ -246,12 +248,19 @@ void CommonLinuxApiSystem::startBluetoothLiveDevices(const std::function<void(co
         .onInterface("org.bluez.Adapter1");
 
     try {
-
-        auto devices = getBluetoothDevices([](const std::map<std::string, sdbus::Variant> &properties) {
+        const auto devicesAndPaths = getBluetoothDevices([](const std::map<std::string, sdbus::Variant> &properties) {
             return !properties.at("Paired").get<bool>();
         });
-        for (const auto& device : devices) {
-            func(deviceAddedEvent(device));
+        for (const auto& devicesAndPath : devicesAndPaths) {
+            auto [path, deviceInfo] = devicesAndPath;
+            auto device = extractDevice(deviceInfo);
+            {
+                std::lock_guard<std::mutex> lock(devicesMutex);
+                if (discoveredDevicePaths.find(path) == discoveredDevicePaths.end()) {
+                    discoveredDevicePaths[path] = device;
+                    func(deviceAddedEvent(device));
+                }
+            }
         }
     } catch (const sdbus::Error& e) {
         LOG(LogError) << "D-Bus Error: " << e.what();
@@ -270,7 +279,14 @@ void CommonLinuxApiSystem::startBluetoothLiveDevices(const std::function<void(co
             for (const auto& [interface, properties] : interfacesAndProperties) {
                 if (interface == "org.bluez.Device1") {
                     if (pairBluetoothFilter(properties)) {
-                        func(deviceAddedEvent(properties));
+                        auto device = extractDevice(properties);
+                        {
+                            std::lock_guard<std::mutex> lock(devicesMutex);
+                            if (!device.name.empty() && discoveredDevicePaths.find(objectPath) == discoveredDevicePaths.end()) {
+                                discoveredDevicePaths[objectPath] = device;
+                                func(deviceAddedEvent(device));
+                            }
+                        }
                     }
                 }
             }
@@ -279,10 +295,17 @@ void CommonLinuxApiSystem::startBluetoothLiveDevices(const std::function<void(co
     rootAdapterProxy->
         uponSignal("InterfacesRemoved")
         .onInterface("org.freedesktop.DBus.ObjectManager")
-        .call([this, func](const sdbus::ObjectPath& objectPath, const std::map<std::string, std::map<std::string, sdbus::Variant>>& interfacesAndProperties){
-            for (const auto& [interface, properties] : interfacesAndProperties) {
+        .call([this, func](const sdbus::ObjectPath& objectPath, const std::vector<std::string>& interfaces){
+            for (const auto& interface : interfaces) {
                 if (interface == "org.bluez.Device1") {
-                    func(deviceRemovedEvent(properties));
+                    {
+                        std::lock_guard<std::mutex> lock(devicesMutex);
+                        if (discoveredDevicePaths.find(objectPath) != discoveredDevicePaths.end()) {
+                            auto device = discoveredDevicePaths[objectPath];
+                            discoveredDevicePaths.erase(objectPath);
+                            func(deviceRemovedEvent(device));
+                        }
+                    }
                 }
             }
         });
@@ -326,8 +349,8 @@ std::vector<std::string> CommonLinuxApiSystem::getPairedBluetoothDeviceList() {
         auto devices = getBluetoothDevices([](const std::map<std::string, sdbus::Variant> &properties) {
             return properties.at("Paired").get<bool>();
         });
-        for (const auto& device : devices) {
-            devicesXml.emplace_back(deviceEvent(device));
+        for (const auto& properties : devices) {
+            devicesXml.emplace_back(deviceEvent(properties.second));
         }
     } catch (const sdbus::Error& e) {
         LOG(LogError) << "D-Bus Error: " << e.what();
@@ -343,7 +366,7 @@ bool CommonLinuxApiSystem::forgetBluetoothControllers() {
         });
 
         for (const auto& properties : devicesProps) {
-            auto device = extractDevice(properties);
+            auto device = extractDevice(properties.second);
             executeScript("bluetoothctl remove " + device.address);
         }
     } catch (const sdbus::Error& e) {
